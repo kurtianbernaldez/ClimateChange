@@ -111,11 +111,14 @@ def main():
         n_clusters = st.slider("Select number of clusters (k):", 2, 10, 3)
 
         # Update to use numeric columns
-        numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns
+        numeric_columns = [
+            col for col in data.select_dtypes(include=['float64', 'int64']).columns
+            if col.lower() not in ['year', 'month']
+        ]
+
         clustering_columns = st.multiselect(
             "Select features for clustering:",
-            numeric_columns,
-            default=[col for col in numeric_columns if col not in ['Cluster']][:2]
+            numeric_columns
         )
 
         # Check if at least one column is selected
@@ -176,7 +179,7 @@ def main():
         # Filter potential features (excluding target and non-numeric columns)
         potential_features = [
             col for col in data.columns
-            if col != target and data[col].dtype in ['int64', 'float64']
+            if col != target and data[col].dtype in ['int64', 'float64'] and col.lower() not in ['year', 'month']
         ]
         feature = st.selectbox("Select predictor variable:", potential_features)
 
@@ -206,7 +209,7 @@ def main():
             st.subheader("Regression Metrics")
             st.metric("Mean Squared Error", f"{mean_squared_error(y, predictions):.4f}")
             st.metric("R-squared", f"{r2_score(y, predictions):.4f}")
-            
+
         # Regression Insights
         st.subheader("Regression Insights")
         coefficient = model.coef_[0]
