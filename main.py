@@ -118,7 +118,8 @@ def main():
 
         clustering_columns = st.multiselect(
             "Select features for clustering:",
-            numeric_columns
+            numeric_columns,
+            default=numeric_columns[:2]
         )
 
         # Check if at least one column is selected
@@ -130,46 +131,53 @@ def main():
             scaler = StandardScaler()
             scaled_data = scaler.fit_transform(cluster_data)
 
-            # Perform PCA to reduce to 2D for visualization
-            pca = PCA(n_components=2)
-            pca_data = pca.fit_transform(scaled_data)
+            try:
+                # Perform PCA to reduce to 2D for visualization
+                pca = PCA(n_components=2)
+                pca_data = pca.fit_transform(scaled_data)
 
-            # Perform clustering
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-            clusters = kmeans.fit_predict(scaled_data)
+                # Perform clustering
+                kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+                clusters = kmeans.fit_predict(scaled_data)
 
-            # Add clusters to dataframe
-            data["Cluster"] = clusters
+                # Add clusters to dataframe
+                data["Cluster"] = clusters
 
-            # Cluster visualization
-            col1, col2 = st.columns(2)
+                # Cluster visualization
+                col1, col2 = st.columns(2)
 
-            with col1:
-                st.subheader("Cluster Visualization")
-                fig, ax = plt.subplots(figsize=(10, 6))
-                scatter = ax.scatter(
-                    pca_data[:, 0], pca_data[:, 1],
-                    c=clusters, cmap='viridis', alpha=0.7
+                with col1:
+                    st.subheader("Cluster Visualization")
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    scatter = ax.scatter(
+                        pca_data[:, 0], pca_data[:, 1],
+                        c=clusters, cmap='viridis', alpha=0.7
+                    )
+                    ax.set_title(f"K-means Clustering (PCA)")
+                    ax.set_xlabel("First Principal Component")
+                    ax.set_ylabel("Second Principal Component")
+                    plt.colorbar(scatter, ax=ax, label='Cluster')
+                    st.pyplot(fig)
+
+                with col2:
+                    st.subheader("Cluster Insights")
+                    # Generate and display cluster insights
+                    cluster_insights = analyze_clusters(data, clusters, clustering_columns)
+                    for cluster, insight in cluster_insights.items():
+                        st.markdown(insight)
+
+                # Show explained variance
+                st.subheader("PCA Explained Variance")
+                st.write(f"Explained Variance Ratio: {pca.explained_variance_ratio_}")
+
+            except ValueError as e:
+                st.error(
+                    "PCA could not be performed due to insufficient features or data points. "
+                    "Please select additional features or ensure the dataset has enough rows."
                 )
-                ax.set_title(f"K-means Clustering (PCA)")
-                ax.set_xlabel("First Principal Component")
-                ax.set_ylabel("Second Principal Component")
-                plt.colorbar(scatter, ax=ax, label='Cluster')
-                st.pyplot(fig)
-
-            with col2:
-                st.subheader("Cluster Insights")
-                # Generate and display cluster insights
-                cluster_insights = analyze_clusters(data, clusters, clustering_columns)
-                for cluster, insight in cluster_insights.items():
-                    st.markdown(insight)
-
-            # Show explained variance
-            st.subheader("PCA Explained Variance")
-            st.write(f"Explained Variance Ratio: {pca.explained_variance_ratio_}")
+                st.write(f"Error details: {str(e)}")
         else:
             st.warning("Please select at least one numeric column for clustering")
-
     with tab3:
         st.header("📈 Regression Analysis")
 
